@@ -29,22 +29,25 @@ function getAudioBuffer() {
 function getPitch() {
 	//from https://github.com/peterkhayes/pitchfinder
 	const myAudioBuffer = getAudioBuffer(); // assume this returns a WebAudio AudioBuffer object
-	if (myAudioBuffer == null) {return null};
+	if (myAudioBuffer == null) {return undefined};
 	const float32Array = myAudioBuffer.getChannelData(0); // get a single channel of sound
 	return detectPitch(float32Array); // null if pitch cannot be identified
 }
 
-document.getElementById("test").innerHTML = "hello";
-
+//
 initAudioBuffer();
 
+var pitch_display = "";
 // Our main update loop!
 function update() {
     // Keep track of time for time-synced animations and music
     //updateTime();
 
-    var pitch = getPitch();
-    console.log(pitch);
+    let pitch_precise = getPitch();
+    if (pitch_precise != undefined) {
+    	pitch_display = Math.round(pitch_precise) + ' Hz';
+    	document.getElementById("test").innerHTML = pitch_display;
+    }
 
     // Ask the browser to run this on the next frame please   「 次のフラムをください。」
     requestAnimationFrame( update );
