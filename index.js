@@ -2,8 +2,8 @@ const Pitchfinder = require("pitchfinder");
 const detectPitch = Pitchfinder.AMDF();
 var audioInputBuffer = null;
 
-// from https://developers.google.com/web/fundamentals/media/recording-audio/
 function initAudioBuffer() {
+	// from https://developers.google.com/web/fundamentals/media/recording-audio/
 	var handleSuccess = function(stream) {
 	    var context = new AudioContext();
 	    var source = context.createMediaStreamSource(stream);
@@ -15,7 +15,7 @@ function initAudioBuffer() {
 	    processor.onaudioprocess = function(e) {
 	      // Do something with the data, i.e Convert this to WAV
 	      //console.log(e.inputBuffer);
-	      audioInputBuffer = e.inputBuffer;
+	      audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
 	    };
 	  };
 
@@ -26,7 +26,7 @@ function getAudioBuffer() {
 	return audioInputBuffer;
 }
 
-function getPitch() {
+function getPitchFromAudio() {
 	//from https://github.com/peterkhayes/pitchfinder
 	const myAudioBuffer = getAudioBuffer(); // assume this returns a WebAudio AudioBuffer object
 	if (myAudioBuffer == null) {return undefined};
@@ -34,18 +34,16 @@ function getPitch() {
 	return detectPitch(float32Array); // null if pitch cannot be identified
 }
 
-//
-initAudioBuffer();
+function init() {
+	initAudioBuffer();
+}
 
-var pitch_display = "";
 // Our main update loop!
 function update() {
-    // Keep track of time for time-synced animations and music
-    //updateTime();
 
-    let pitch_precise = getPitch();
+    let pitch_precise = getPitchFromAudio();
     if (pitch_precise != undefined) {
-    	pitch_display = Math.round(pitch_precise) + ' Hz';
+    	let pitch_display = Math.round(pitch_precise) + ' Hz';
     	document.getElementById("test").innerHTML = pitch_display;
     }
 
@@ -53,4 +51,5 @@ function update() {
     requestAnimationFrame( update );
 }
 
+init();
 update();
