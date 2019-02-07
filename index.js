@@ -1,6 +1,22 @@
 const Pitchfinder = require("pitchfinder");
+
 const detectPitch = Pitchfinder.AMDF();
 var audioInputBuffer = null;
+
+function initGraphics() {
+	// initialize Two.js here
+    var TWO_WIDTH = 1280;
+    var TWO_HEIGHT = 720;
+
+     // Make an instance of two and place it on the page
+    var elem = document.getElementById('main-container');
+    var params = { fullscreen: false, width: TWO_WIDTH, height: TWO_HEIGHT };
+    var two = new Two(params).appendTo(elem);
+    
+    two.renderer.domElement.setAttribute("viewBox", "0 0 " + String(TWO_WIDTH) + " " + String(TWO_HEIGHT));
+    two.renderer.domElement.removeAttribute("width");
+    two.renderer.domElement.removeAttribute("height");
+}
 
 function initAudioBuffer() {
 	// from https://developers.google.com/web/fundamentals/media/recording-audio/
@@ -35,6 +51,7 @@ function getPitchFromAudio() {
 }
 
 function init() {
+	initGraphics();
 	initAudioBuffer();
 }
 

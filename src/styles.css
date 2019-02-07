@@ -1,3 +1,22 @@
+/* All the CSS styling for CYNC */
+body {
+    margin: 0px;
+    background-color: #f3f3f3;
+}
+#main-container {
+    /* from https://stackoverflow.com/questions/20590239/maintain-aspect-ratio-of-div-but-fill-screen-width-and-height-in-css */
+    margin:0;
+    padding:0;
+    width: 100vw; 
+    height: 56.25vw; /* 100/56.25 = 1.778 */
+    max-height: 100vh;
+    max-width: 177.78vh; /* 16/9 = 1.778 */
+    margin: auto;
+    position: absolute;
+    top:0; bottom:0; /* vertical center */
+    left:0; right:0; /* horizontal center */
+    background: pink;
+}
 #test {
 	font-size: 40px;
 }
