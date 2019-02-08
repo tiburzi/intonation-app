@@ -3,14 +3,17 @@ const Tone = require("tone");
 
 const detectPitch = Pitchfinder.AMDF();
 var audioInputBuffer = null;
+
+var TWO_WIDTH = 1280;
+var TWO_HEIGHT = 720;
+var CX = TWO_WIDTH/2;
+var CY = TWO_HEIGHT/2;
 var two;
+var pitchbar;
 
 function initGraphics() {
-	// initialize Two.js here
-    var TWO_WIDTH = 1280;
-    var TWO_HEIGHT = 720;
-
-     // Make an instance of two and place it on the page
+	// Initialize Two.js here
+    // Make an instance of two and place it on the page
     var elem = document.getElementById('main-container');
     var params = { fullscreen: false, width: TWO_WIDTH, height: TWO_HEIGHT };
     two = new Two(params).appendTo(elem);
@@ -18,6 +21,14 @@ function initGraphics() {
     two.renderer.domElement.setAttribute("viewBox", "0 0 " + String(TWO_WIDTH) + " " + String(TWO_HEIGHT));
     two.renderer.domElement.removeAttribute("width");
     two.renderer.domElement.removeAttribute("height");
+
+    pitchbar = two.makeRectangle(CX, CY, 500, 0);
+    pitchbar.noStroke();
+    pitchbar.fill = '#1481BA';
+
+    var baseline = two.makeRectangle(CX, CY, 500, 4);
+    baseline.noStroke();
+    baseline.fill = 'white';
 }
 
 function initAudioBuffer() {
@@ -67,9 +78,13 @@ function update() {
 
     if (pitch_precise != undefined) {
     	let pitch_display = Math.round(pitch_precise) + ' Hz';
-    	pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote()+'<br/>'+pitch_note_offset;
+    	pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote();
+    	pitch_display += '<br/>'+pitch_note_offset;
     	document.getElementById("test").innerHTML = pitch_display;
     }
+
+
+    pitchbar.vertices[0].y = pitchbar.vertices[1].y = -100*pitch_note_offset;
 
     two.update();
 
