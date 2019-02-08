@@ -1,7 +1,9 @@
 const Pitchfinder = require("pitchfinder");
+const Tone = require("tone");
 
 const detectPitch = Pitchfinder.AMDF();
 var audioInputBuffer = null;
+var two;
 
 function initGraphics() {
 	// initialize Two.js here
@@ -11,7 +13,7 @@ function initGraphics() {
      // Make an instance of two and place it on the page
     var elem = document.getElementById('main-container');
     var params = { fullscreen: false, width: TWO_WIDTH, height: TWO_HEIGHT };
-    var two = new Two(params).appendTo(elem);
+    two = new Two(params).appendTo(elem);
     
     two.renderer.domElement.setAttribute("viewBox", "0 0 " + String(TWO_WIDTH) + " " + String(TWO_HEIGHT));
     two.renderer.domElement.removeAttribute("width");
@@ -59,10 +61,17 @@ function init() {
 function update() {
 
     let pitch_precise = getPitchFromAudio();
+    let note_rounded = Tone.Frequency.ftom(pitch_precise);
+    let pitch_rounded = Tone.Frequency.mtof(note_rounded);
+    let pitch_note_offset = pitch_precise-pitch_rounded;
+
     if (pitch_precise != undefined) {
     	let pitch_display = Math.round(pitch_precise) + ' Hz';
+    	pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote()+'<br/>'+pitch_note_offset;
     	document.getElementById("test").innerHTML = pitch_display;
     }
+
+    two.update();
 
     // Ask the browser to run this on the next frame please   「 次のフラムをください。」
     requestAnimationFrame( update );
