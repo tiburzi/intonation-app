@@ -1,13 +1,15 @@
 const Pitchfinder = require("pitchfinder");
 const Tone = require("tone");
 
+// define audio variables
 const detectPitch = Pitchfinder.AMDF();
 var audioInputBuffer = null;
 
-var TWO_WIDTH = 1280;
-var TWO_HEIGHT = 720;
-var CX = TWO_WIDTH/2;
-var CY = TWO_HEIGHT/2;
+// define graphics variables
+const TWO_WIDTH = 1280;
+const TWO_HEIGHT = 720;
+const CX = TWO_WIDTH/2;
+const CY = TWO_HEIGHT/2;
 var two;
 var pitchbar;
 
@@ -63,6 +65,21 @@ function getPitchFromAudio() {
 	return detectPitch(float32Array); // null if pitch cannot be identified
 }
 
+function updatePitchDisplay(new_pitch) {
+	if (new_pitch != undefined) {
+		let note_rounded = Tone.Frequency.ftom(new_pitch);
+	    let pitch_rounded = Tone.Frequency.mtof(note_rounded);
+	    let pitch_note_offset = new_pitch-pitch_rounded;
+		
+		let pitch_display = Math.round(new_pitch) + ' Hz';
+		pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote();
+		pitch_display += '<br/>'+pitch_note_offset;
+		document.getElementById("test").innerHTML = pitch_display;
+
+	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = -30*pitch_note_offset;
+	}
+}
+
 function init() {
 	initGraphics();
 	initAudioBuffer();
@@ -71,20 +88,7 @@ function init() {
 // Our main update loop!
 function update() {
 
-    let pitch_precise = getPitchFromAudio();
-    let note_rounded = Tone.Frequency.ftom(pitch_precise);
-    let pitch_rounded = Tone.Frequency.mtof(note_rounded);
-    let pitch_note_offset = pitch_precise-pitch_rounded;
-
-    if (pitch_precise != undefined) {
-    	let pitch_display = Math.round(pitch_precise) + ' Hz';
-    	pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote();
-    	pitch_display += '<br/>'+pitch_note_offset;
-    	document.getElementById("test").innerHTML = pitch_display;
-    }
-
-
-    pitchbar.vertices[0].y = pitchbar.vertices[1].y = -100*pitch_note_offset;
+    updatePitchDisplay(getPitchFromAudio());
 
     two.update();
 
