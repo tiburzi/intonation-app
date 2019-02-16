@@ -5,14 +5,19 @@ const Tone = require("tone");
 const detectPitch = Pitchfinder.AMDF();//DynamicWavelet();
 var audioInputBuffer = null;
 var pitchHistory = [];
-const MAX_PITCH_HISTORY = 10;
+const MAX_PITCH_HISTORY = 40;
+const INPUT_LEVEL_THRESHOLD = -40; //dB
 var pitchSmoothed;
+var motu;
+var meter = new Tone.Meter();
 
 // define graphics variables
 const TWO_WIDTH = 1280;
 const TWO_HEIGHT = 720;
 const CX = TWO_WIDTH/2;
 const CY = TWO_HEIGHT/2;
+const BLUE = 				'#1481BAFF';
+const BLUE_TRANSPARENT = 	'#1481BA50';
 var two;
 var pitchbar;
 var inputbar;
@@ -30,7 +35,7 @@ function initGraphics() {
 
     pitchbar = two.makeRectangle(CX, CY, 500, 0);
     pitchbar.noStroke();
-    pitchbar.fill = '#1481BA';
+    pitchbar.fill = BLUE;
 
     var baseline = two.makeRectangle(CX, CY, 500, 4);
     baseline.noStroke();
@@ -43,12 +48,20 @@ function initGraphics() {
 
 function initAudioBuffer() {
 	// from https://developers.google.com/web/fundamentals/media/recording-audio/
-	var handleSuccess = function(stream) {
+	/*var handleSuccess = function(stream) {
 	    var context = new AudioContext();
 	    var source = context.createMediaStreamSource(stream);
-	    var processor = context.createScriptProcessor(1024, 1, 1);
 
-	    source.connect(processor);
+	    // from https://stackoverflow.com/questions/22233037/how-to-apply-basic-audio-filter-using-javascript/22464042
+		filter = context.createBiquadFilter();
+		filter.type = "lowpass";
+		filter.frequency.value = 200;
+		filter.Q.value = 10;
+
+	    var processor = context.createScriptProcessor(512, 1, 1);
+
+	    source.connect(filter);
+	    filter.connect(processor);
 	    processor.connect(context.destination);
 
 	    processor.onaudioprocess = function(e) {
@@ -56,9 +69,31 @@ function initAudioBuffer() {
 	      //console.log(e.inputBuffer);
 	      audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
 	    };
+
 	  };
 
-  navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);
+	navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(handleSuccess);*/
+
+	motu = new Tone.UserMedia();
+	motu.open().then(function(){
+		var filter = new Tone.Filter(100, 'lowpass');
+
+		var processor = Tone.context.createScriptProcessor(512, 1, 1);
+
+	    processor.onaudioprocess = function(e) {
+	    	if (meter.getLevel() > INPUT_LEVEL_THRESHOLD) // listen only if input it loud enough
+	    		audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
+	    	else audioInputBuffer = null;
+	    };
+
+	    var end = Tone.context.destination;
+
+	    motu.chain(meter, processor, end);
+	    //motu.connect(meter);
+	    //filter.connect(meter);
+	    //meter.connect(processor);
+	    //processor.connect(Tone.context.destination);
+	});
 }
 
 function getAudioBuffer() {
@@ -103,6 +138,8 @@ function updatePitchDisplay(new_pitch) {
 	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
 	    inputbar.translation.y = CY+scale*off_raw;
 	}
+
+	pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
 }
 
 function init() {
@@ -116,6 +153,8 @@ function update() {
     updatePitchDisplay(getPitchFromAudio());
 
     two.update();
+
+    if (meter != undefined)	console.log(meter.getLevel());
 
     // Ask the browser to run this on the next frame please   「 次のフラムをください。」
     requestAnimationFrame( update );
