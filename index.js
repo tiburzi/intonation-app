@@ -6,7 +6,7 @@ const detectPitch = Pitchfinder.AMDF();//DynamicWavelet();
 var audioInputBuffer = null;
 var pitchHistory = [];
 const MAX_PITCH_HISTORY = 40;
-const INPUT_LEVEL_THRESHOLD = -40; //dB
+const INPUT_LEVEL_THRESHOLD = -45; //dB
 var pitchSmoothed;
 var motu;
 var meter = new Tone.Meter();
@@ -21,6 +21,7 @@ const BLUE_TRANSPARENT = 	'#1481BA50';
 var two;
 var pitchbar;
 var inputbar;
+var inputmeter;
 
 function initGraphics() {
 	// Initialize Two.js here
@@ -44,6 +45,15 @@ function initGraphics() {
     inputbar = two.makeRectangle(CX, CY, 500, 4);
     inputbar.noStroke();
     inputbar.fill = 'red';
+
+    inputmeter = two.makeRectangle(TWO_WIDTH-5, TWO_HEIGHT, 10, 100);
+    inputmeter.noStroke();
+    inputmeter.fill = '#aaffaa';
+
+    let _y = Util.lerp(TWO_HEIGHT, 0, (100+INPUT_LEVEL_THRESHOLD)/100);
+    var inputmeterthreshold = two.makeRectangle(TWO_WIDTH-5, _y, 20, 4);
+    inputmeterthreshold.noStroke();
+    inputmeterthreshold.fill = 'black';
 }
 
 function initAudioBuffer() {
@@ -79,7 +89,6 @@ function initAudioBuffer() {
 		var filter = new Tone.Filter(100, 'lowpass');
 
 		var processor = Tone.context.createScriptProcessor(512, 1, 1);
-
 	    processor.onaudioprocess = function(e) {
 	    	if (meter.getLevel() > INPUT_LEVEL_THRESHOLD) // listen only if input it loud enough
 	    		audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
@@ -89,10 +98,6 @@ function initAudioBuffer() {
 	    var end = Tone.context.destination;
 
 	    motu.chain(meter, processor, end);
-	    //motu.connect(meter);
-	    //filter.connect(meter);
-	    //meter.connect(processor);
-	    //processor.connect(Tone.context.destination);
 	});
 }
 
@@ -140,6 +145,7 @@ function updatePitchDisplay(new_pitch) {
 	}
 
 	pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
+	inputmeter.vertices[0].y = inputmeter.vertices[1].y = -Util.lerp(0, TWO_HEIGHT, (100+meter.getLevel())/100);
 }
 
 function init() {
