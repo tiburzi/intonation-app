@@ -2,8 +2,11 @@ const Pitchfinder = require("pitchfinder");
 const Tone = require("tone");
 
 // define audio variables
-const detectPitch = Pitchfinder.AMDF();
+const detectPitch = Pitchfinder.AMDF();//DynamicWavelet();
 var audioInputBuffer = null;
+var pitchHistory = [];
+const MAX_PITCH_HISTORY = 10;
+var pitchSmoothed;
 
 // define graphics variables
 const TWO_WIDTH = 1280;
@@ -12,6 +15,7 @@ const CX = TWO_WIDTH/2;
 const CY = TWO_HEIGHT/2;
 var two;
 var pitchbar;
+var inputbar;
 
 function initGraphics() {
 	// Initialize Two.js here
@@ -31,6 +35,10 @@ function initGraphics() {
     var baseline = two.makeRectangle(CX, CY, 500, 4);
     baseline.noStroke();
     baseline.fill = 'white';
+
+    inputbar = two.makeRectangle(CX, CY, 500, 4);
+    inputbar.noStroke();
+    inputbar.fill = 'red';
 }
 
 function initAudioBuffer() {
@@ -65,18 +73,35 @@ function getPitchFromAudio() {
 	return detectPitch(float32Array); // null if pitch cannot be identified
 }
 
+function getPitchNoteOffset(p) {
+	let note = Tone.Frequency.ftom(p);
+    let note_p = Tone.Frequency.mtof(note);
+    let off = p-note_p;
+    return off;
+}
+
 function updatePitchDisplay(new_pitch) {
 	if (new_pitch != undefined) {
-		let note_rounded = Tone.Frequency.ftom(new_pitch);
-	    let pitch_rounded = Tone.Frequency.mtof(note_rounded);
-	    let pitch_note_offset = new_pitch-pitch_rounded;
+		
+		// save the pitch into pitch history
+		pitchHistory.push(new_pitch);
+		if (pitchHistory.length>MAX_PITCH_HISTORY)
+			pitchHistory.shift(); //remove oldest recorded pitch
+		pitchSmoothed = Util.arrayAverage(pitchHistory);
+
+		// analyze and report the pitch accuracy
+	    let off_raw = getPitchNoteOffset(new_pitch);
+	    let off_smoothed = getPitchNoteOffset(pitchSmoothed);
 		
 		let pitch_display = Math.round(new_pitch) + ' Hz';
-		pitch_display += '<br/>'+Tone.Frequency(note_rounded, "midi").toNote();
-		pitch_display += '<br/>'+pitch_note_offset;
+		pitch_display += '<br/>'+Tone.Frequency(Tone.Frequency.ftom(new_pitch), "midi").toNote();
+		pitch_display += '<br/>'+off_raw;
 		document.getElementById("test").innerHTML = pitch_display;
 
-	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = -30*pitch_note_offset;
+		// update visuals
+		let scale = -60;
+	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
+	    inputbar.translation.y = CY+scale*off_raw;
 	}
 }
 
