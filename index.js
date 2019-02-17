@@ -2,10 +2,10 @@ const Pitchfinder = require("pitchfinder");
 const Tone = require("tone");
 
 // define audio variables
-const detectPitch = Pitchfinder.AMDF();//DynamicWavelet();
+const detectPitch = Pitchfinder.DynamicWavelet();
 var audioInputBuffer = null;
 var pitchHistory = [];
-const MAX_PITCH_HISTORY = 40;
+const MAX_PITCH_HISTORY = 12;
 const INPUT_LEVEL_THRESHOLD = -45; //dB
 var pitchSmoothed;
 var motu;
@@ -86,9 +86,18 @@ function initAudioBuffer() {
 
 	motu = new Tone.UserMedia();
 	motu.open().then(function(){
-		var filter = new Tone.Filter(100, 'lowpass');
+		var hp_filter = new Tone.Filter({
+			type: 'highpass',
+			frequency: 50,
+			rolloff: -24
+		});
+		var lp_filter = new Tone.Filter({
+			type: 'lowpass',
+			frequency: 800,
+			rolloff: -24
+		});
 
-		var processor = Tone.context.createScriptProcessor(512, 1, 1);
+		var processor = Tone.context.createScriptProcessor(1024, 1, 1);
 	    processor.onaudioprocess = function(e) {
 	    	if (meter.getLevel() > INPUT_LEVEL_THRESHOLD) // listen only if input it loud enough
 	    		audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
@@ -97,7 +106,7 @@ function initAudioBuffer() {
 
 	    var end = Tone.context.destination;
 
-	    motu.chain(meter, processor, end);
+	    motu.chain(hp_filter, lp_filter, meter, processor, end);
 	});
 }
 
@@ -160,7 +169,7 @@ function update() {
 
     two.update();
 
-    if (meter != undefined)	console.log(meter.getLevel());
+    //if (meter != undefined)	console.log(meter.getLevel());
 
     // Ask the browser to run this on the next frame please   「 次のフラムをください。」
     requestAnimationFrame( update );
