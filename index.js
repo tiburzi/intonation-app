@@ -10,6 +10,9 @@ const INPUT_LEVEL_THRESHOLD = -45; //dB
 var pitchSmoothed;
 var motu;
 var meter = new Tone.Meter();
+var LISTENING = false;
+var listening_text;
+var spacebar_keydown_bool = false;
 
 // define graphics variables
 const TWO_WIDTH = 1280;
@@ -58,6 +61,11 @@ function initGraphics() {
     var inputmeterthreshold = two.makeRectangle(TWO_WIDTH-5, _y, 20, 4);
     inputmeterthreshold.noStroke();
     inputmeterthreshold.fill = 'black';
+
+    listening_text = two.makeText('', 20, 20);
+    listening_text.size = 30;
+    listening_text.alignment = 'left';
+    listening_text.fill = 'gray';
 
     var _noteNames = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
     var angle_offset = -0.25*TAU;
@@ -144,6 +152,7 @@ function initAudioBuffer() {
 	    var end = Tone.context.destination;
 
 	    motu.chain(hp_filter, lp_filter, meter, processor, end);
+	    setInputListening(true);
 	});
 }
 
@@ -194,9 +203,35 @@ function updatePitchDisplay(new_pitch) {
 	inputmeter.vertices[0].y = inputmeter.vertices[1].y = -Util.lerp(0, TWO_HEIGHT, (100+meter.getLevel())/100);
 }
 
+function setInputListening(active) {
+	if (active == false) {
+		motu.close();
+		listening_text.value = 'not listening (SPACEBAR)';
+	} else {
+		motu.open();
+		listening_text.value = 'listening (SPACEBAR)';
+	}
+	LISTENING = active;
+}
+
 function init() {
 	initGraphics();
 	initAudioBuffer();
+}
+
+function debugUpdate() {
+	$(window).keydown(function(e) {
+    	if (e.which === 32 && !spacebar_keydown_bool) { //spacebar
+    		setInputListening(!LISTENING);
+    		spacebar_keydown_bool = true;
+    	}
+	});
+
+	$(window).keyup(function(e) {
+		if (e.which === 32) {//spacebar
+			spacebar_keydown_bool = false;
+		}
+	});
 }
 
 // Our main update loop!
@@ -206,6 +241,8 @@ function update() {
 
     two.update();
     TWEEN.update();
+
+    debugUpdate();
 
     //if (meter != undefined)	console.log(meter.getLevel());
 
