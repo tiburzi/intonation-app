@@ -29,6 +29,8 @@ function initGraphics() {
     var elem = document.getElementById('main-container');
     var params = { fullscreen: false, width: TWO_WIDTH, height: TWO_HEIGHT };
     two = new Two(params).appendTo(elem);
+    Interactions.init(two);
+    TweenHelper.init(TWEEN);
     
     two.renderer.domElement.setAttribute("viewBox", "0 0 " + String(TWO_WIDTH) + " " + String(TWO_HEIGHT));
     two.renderer.domElement.removeAttribute("width");
@@ -56,22 +58,9 @@ function initGraphics() {
     inputmeterthreshold.fill = 'black';
 
     var testcircle = two.makeCircle(200, 200, 100);
-    Interactions.init(two);
-    TweenHelper.init(TWEEN);
     Interactions.add(testcircle);
-
-	testcircle.onMouseEnter = function(e) {
-	    if (!this.hoverOver && !this.clicked) {
-	        TweenHelper.tweenToScale(this, 1.2, 200);
-	        this.hoverOver = true;
-	    }
-	}
-	testcircle.onMouseLeave = function(e) {
-	    if (this.hoverOver && !this.clicked) {
-	        TweenHelper.tweenToScale(this, 1, 200);
-	        this.hoverOver = false;
-	    }
-	}
+    Interactions.addHoverScale(testcircle);
+	
 }
 
 function initAudioBuffer() {

@@ -1,5 +1,8 @@
 function TweenHelper() {
 	var TWEEN = null;
+	const TWEEN_SCALE_NORMAL = 	1.0;
+	const TWEEN_SCALE_UP = 		1.2;
+	const TWEEN_SCALE_DOWN = 	0.8;
 }
 
 TweenHelper.init = function(_tween) {

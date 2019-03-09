@@ -152,3 +152,22 @@ Interactions.add = function(shape) {
         if (typeof shape.onGlobalMouseDown === 'function') {shape.onGlobalMouseDown(e);}
     });
 }
+
+Interactions.addHoverScale = function(shape) {
+    shape.clicked = false;
+    shape.hoverOver = false;
+    console.log(1);
+
+    shape.onMouseEnter = function(e) {
+        if (!shape.hoverOver && !shape.clicked) {
+            TweenHelper.tweenToScale(shape, 1.2, 200);
+            shape.hoverOver = true;
+        }
+    }
+    shape.onMouseLeave = function(e) {
+        if (shape.hoverOver && !shape.clicked) {
+            TweenHelper.tweenToScale(shape, 1, 200);
+            shape.hoverOver = false;
+        }
+    }
+}
