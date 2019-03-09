@@ -18,6 +18,8 @@ const CX = TWO_WIDTH/2;
 const CY = TWO_HEIGHT/2;
 const BLUE = 				'#1481BAFF';
 const BLUE_TRANSPARENT = 	'#1481BA50';
+const BACKGROUND_COLOR =	'#f3f3f3ff';
+const TAU = 2*Math.PI;
 var two;
 var pitchbar;
 var inputbar;
@@ -57,10 +59,38 @@ function initGraphics() {
     inputmeterthreshold.noStroke();
     inputmeterthreshold.fill = 'black';
 
-    var testcircle = two.makeCircle(200, 200, 100);
-    Interactions.add(testcircle);
-    Interactions.addHoverScale(testcircle);
+    var _noteNames = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+    var angle_offset = -0.25*TAU;
+    for (let i=0; i<_noteNames.length; i++) {
+    	let angle = TAU * (i/_noteNames.length) + angle_offset;
+    	let dist = 200;
+    	let _x = CX + Util.lengthdirX(angle, dist);
+    	let _y = CY + Util.lengthdirY(angle, dist);
+    	var btn = makeNoteBtn(_x, _y, _noteNames[i]);
+    }
+}
+
+function makeNoteBtn(x, y, note) {
+	var r = 30;
+	var boundingCircle = two.makeCircle(0, 0, 2*r).noStroke();
+	boundingCircle.opacity = 0;
+	boundingCircle.fill = BACKGROUND_COLOR; //back-up in case opacity doesn't work
+
+	var back = two.makeCircle(0, 0, r).noStroke();
+	back.fill = '#aaaaaa';
+	back.opacity = 1;
+
+	var text = two.makeText(note, 0, 0);
+	text.family = 'Comfortaa';
+    text.size = 30;
+
+    var note_btn = two.makeGroup(boundingCircle, back, text);
+    note_btn.translation.set(x, y);
 	
+	Interactions.add(note_btn);
+    Interactions.addHoverScale(note_btn);
+
+    return note_btn;
 }
 
 function initAudioBuffer() {

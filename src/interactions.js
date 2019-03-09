@@ -117,7 +117,7 @@ Interactions.add = function(shape) {
 
     $(shape._renderer.elem)
         .css({
-            'cursor': 'move',
+            'cursor': 'pointer',
         })
         .bind('mousedown', dragStart)
         .bind('mouseup', dragEnd)
