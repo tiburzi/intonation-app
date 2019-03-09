@@ -2,7 +2,7 @@ const Pitchfinder = require("pitchfinder");
 const Tone = require("tone");
 
 // define audio variables
-const detectPitch = Pitchfinder.DynamicWavelet();
+const detectPitch = Pitchfinder.AMDF();//DynamicWavelet();
 var audioInputBuffer = null;
 var pitchHistory = [];
 const MAX_PITCH_HISTORY = 12;
@@ -54,6 +54,24 @@ function initGraphics() {
     var inputmeterthreshold = two.makeRectangle(TWO_WIDTH-5, _y, 20, 4);
     inputmeterthreshold.noStroke();
     inputmeterthreshold.fill = 'black';
+
+    var testcircle = two.makeCircle(200, 200, 100);
+    Interactions.init(two);
+    TweenHelper.init(TWEEN);
+    Interactions.add(testcircle);
+
+	testcircle.onMouseEnter = function(e) {
+	    if (!this.hoverOver && !this.clicked) {
+	        TweenHelper.tweenToScale(this, 1.2, 200);
+	        this.hoverOver = true;
+	    }
+	}
+	testcircle.onMouseLeave = function(e) {
+	    if (this.hoverOver && !this.clicked) {
+	        TweenHelper.tweenToScale(this, 1, 200);
+	        this.hoverOver = false;
+	    }
+	}
 }
 
 function initAudioBuffer() {
@@ -168,6 +186,7 @@ function update() {
     updatePitchDisplay(getPitchFromAudio());
 
     two.update();
+    TWEEN.update();
 
     //if (meter != undefined)	console.log(meter.getLevel());
 
