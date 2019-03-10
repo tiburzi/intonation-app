@@ -186,7 +186,7 @@ function initAudioBuffer() {
 			rolloff: -24
 		});
 
-		var processor = Tone.context.createScriptProcessor(1024, 1, 1);
+		var processor = Tone.context.createScriptProcessor(2048, 1, 1);
 	    processor.onaudioprocess = function(e) {
 	    	if (meter.getLevel() > INPUT_LEVEL_THRESHOLD) // listen only if input it loud enough
 	    		audioInputBuffer = e.inputBuffer; //save the audio buffer (is there a better way to do this?)
