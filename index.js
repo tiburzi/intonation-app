@@ -41,17 +41,17 @@ function initGraphics() {
     two.renderer.domElement.removeAttribute("width");
     two.renderer.domElement.removeAttribute("height");
 
-    pitchbar = two.makeRectangle(CX, CY, 500, 0);
+    /*pitchbar = two.makeRectangle(CX, CY, 500, 0);
     pitchbar.noStroke();
-    pitchbar.fill = BLUE;
+    pitchbar.fill = BLUE;*/
 
     var baseline = two.makeRectangle(CX, CY, 500, 4);
     baseline.noStroke();
     baseline.fill = 'white';
 
-    inputbar = two.makeRectangle(CX, CY, 500, 4);
+    /*inputbar = two.makeRectangle(CX, CY, 500, 4);
     inputbar.noStroke();
-    inputbar.fill = 'red';
+    inputbar.fill = 'red';*/
 
     inputmeter = two.makeRectangle(TWO_WIDTH-5, TWO_HEIGHT, 10, 100);
     inputmeter.noStroke();
@@ -71,7 +71,7 @@ function initGraphics() {
     var angle_offset = -0.25*TAU;
     for (let i=0; i<_noteNames.length; i++) {
     	let angle = TAU * (i/_noteNames.length) + angle_offset;
-    	let dist = 200;
+    	let dist = TWO_HEIGHT/2 - 100;
     	let _x = CX + Util.lengthdirX(angle, dist);
     	let _y = CY + Util.lengthdirY(angle, dist);
     	var btn = makeNoteBtn(_x, _y, _noteNames[i]);
@@ -194,12 +194,12 @@ function updatePitchDisplay(new_pitch) {
 		document.getElementById("test").innerHTML = pitch_display;
 
 		// update visuals
-		let scale = -60;
+		/*let scale = -60;
 	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
-	    inputbar.translation.y = CY+scale*off_raw;
+	    inputbar.translation.y = CY+scale*off_raw;*/
 	}
 
-	pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
+	//pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
 	inputmeter.vertices[0].y = inputmeter.vertices[1].y = -Util.lerp(0, TWO_HEIGHT, (100+meter.getLevel())/100);
 }
 
