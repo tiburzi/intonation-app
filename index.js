@@ -10,9 +10,11 @@ const INPUT_LEVEL_THRESHOLD = -45; //dB
 var pitchSmoothed;
 var motu;
 var meter = new Tone.Meter();
-var LISTENING = false;
+var listening = false;
 var listening_text;
 var spacebar_keydown_bool = false;
+var inputNote = '';
+var inputOctave = 0;
 
 // define graphics variables
 const TWO_WIDTH = 1280;
@@ -22,11 +24,16 @@ const CY = TWO_HEIGHT/2;
 const BLUE = 				'#1481BAFF';
 const BLUE_TRANSPARENT = 	'#1481BA50';
 const BACKGROUND_COLOR =	'#f3f3f3ff';
+const GRAY = 				'rgba(190,190,190,1)';
+const LT_GRAY = 			'#f3f3f3';
 const TAU = 2*Math.PI;
+const SCALE_START_OFFSET_ANGLE = -0.25*TAU;
 var two;
 var pitchbar;
 var inputbar;
 var inputmeter;
+var noteDial;
+var centsDial;
 
 function initGraphics() {
 	// Initialize Two.js here
@@ -45,14 +52,15 @@ function initGraphics() {
     pitchbar.noStroke();
     pitchbar.fill = BLUE;*/
 
-    var baseline = two.makeRectangle(CX, CY, 500, 4);
+    /*var baseline = two.makeRectangle(CX, CY, 500, 4);
     baseline.noStroke();
-    baseline.fill = 'white';
+    baseline.fill = 'white';*/
 
     /*inputbar = two.makeRectangle(CX, CY, 500, 4);
     inputbar.noStroke();
     inputbar.fill = 'red';*/
 
+    // make input meter
     inputmeter = two.makeRectangle(TWO_WIDTH-5, TWO_HEIGHT, 10, 100);
     inputmeter.noStroke();
     inputmeter.fill = '#aaffaa';
@@ -62,13 +70,15 @@ function initGraphics() {
     inputmeterthreshold.noStroke();
     inputmeterthreshold.fill = 'black';
 
+    // make listening text
     listening_text = two.makeText('', 20, 20);
     listening_text.size = 30;
     listening_text.alignment = 'left';
     listening_text.fill = 'gray';
 
+    // make note buttons
     var _noteNames = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
-    var angle_offset = -0.25*TAU;
+    var angle_offset = SCALE_START_OFFSET_ANGLE;
     for (let i=0; i<_noteNames.length; i++) {
     	let angle = TAU * (i/_noteNames.length) + angle_offset;
     	let dist = TWO_HEIGHT/2 - 100;
@@ -76,10 +86,20 @@ function initGraphics() {
     	let _y = CY + Util.lengthdirY(angle, dist);
     	var btn = makeNoteBtn(_x, _y, _noteNames[i]);
     }
+
+    // make note dial
+    var dial_r =  TWO_HEIGHT/2 - 180;
+    var dial_back = two.makeCircle(0, 0, dial_r).noStroke();
+    dial_back.fill = GRAY;
+    var dial_pointer = two.makePath(dial_r-10, 35, dial_r-10, -35, dial_r+30, 0, false).noStroke();
+    dial_pointer.fill = GRAY;
+    dial_pointer.xscale = 0.5;
+    noteDial = two.makeGroup(dial_back, dial_pointer);
+    noteDial.translation.set(CX, CY);
 }
 
 function makeNoteBtn(x, y, note) {
-	var r = 30;
+	var r = 40;
 	var boundingCircle = two.makeCircle(0, 0, 2*r).noStroke();
 	boundingCircle.opacity = 0;
 	boundingCircle.fill = BACKGROUND_COLOR; //back-up in case opacity doesn't work
@@ -88,7 +108,7 @@ function makeNoteBtn(x, y, note) {
 	back.fill = '#aaaaaa';
 	back.opacity = 1;
 
-	var text = two.makeText(note, 0, 0);
+	var text = two.makeText(note, 0, 2);
 	text.family = 'Comfortaa';
     text.size = 30;
 
@@ -165,7 +185,7 @@ function getPitchFromAudio() {
 	const myAudioBuffer = getAudioBuffer(); // assume this returns a WebAudio AudioBuffer object
 	if (myAudioBuffer == null) {return undefined};
 	const float32Array = myAudioBuffer.getChannelData(0); // get a single channel of sound
-	return detectPitch(float32Array); // null if pitch cannot be identified
+	return detectPitch(float32Array); // returns a float, or null if pitch cannot be identified
 }
 
 function getPitchNoteOffset(p) {
@@ -175,7 +195,16 @@ function getPitchNoteOffset(p) {
     return off;
 }
 
-function updatePitchDisplay(new_pitch) {
+function getOctaveFromToneNote(tone_note) {
+	//tone.js concats a note and an octave, e.g. 'A4'
+	return tone_note.replace(/[^0-9]/gi, ''); //remove letters and #/b, leaving the number
+}
+
+function getNoteFromToneNote(tone_note) {
+	return tone_note.replace(/[0-9]/gi, ''); //remove numbers, leaving the letter
+}
+
+function pitchUpdate(new_pitch) {
 	if (new_pitch != undefined) {
 		
 		// save the pitch into pitch history
@@ -188,15 +217,22 @@ function updatePitchDisplay(new_pitch) {
 	    let off_raw = getPitchNoteOffset(new_pitch);
 	    let off_smoothed = getPitchNoteOffset(pitchSmoothed);
 		
+		let note = Tone.Frequency(Tone.Frequency.ftom(new_pitch), "midi").toNote();
 		let pitch_display = Math.round(new_pitch) + ' Hz';
-		pitch_display += '<br/>'+Tone.Frequency(Tone.Frequency.ftom(new_pitch), "midi").toNote();
+		pitch_display += '<br/>'+note;
 		pitch_display += '<br/>'+off_raw;
 		document.getElementById("test").innerHTML = pitch_display;
+
+		inputNote = getNoteFromToneNote(note);
+		inputOctave = getOctaveFromToneNote(note);
 
 		// update visuals
 		/*let scale = -60;
 	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
 	    inputbar.translation.y = CY+scale*off_raw;*/
+
+	    let precise_octave = Math.log2(pitchSmoothed/Tone.Frequency.A4) + 1;
+	    noteDial.rotation = precise_octave*TAU + SCALE_START_OFFSET_ANGLE;
 	}
 
 	//pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
@@ -211,7 +247,7 @@ function setInputListening(active) {
 		motu.open();
 		listening_text.value = 'listening (SPACEBAR)';
 	}
-	LISTENING = active;
+	listening = active;
 }
 
 function init() {
@@ -222,7 +258,7 @@ function init() {
 function debugUpdate() {
 	$(window).keydown(function(e) {
     	if (e.which === 32 && !spacebar_keydown_bool) { //spacebar
-    		setInputListening(!LISTENING);
+    		setInputListening(!listening);
     		spacebar_keydown_bool = true;
     	}
 	});
@@ -237,7 +273,7 @@ function debugUpdate() {
 // Our main update loop!
 function update() {
 
-    updatePitchDisplay(getPitchFromAudio());
+    pitchUpdate(getPitchFromAudio());
 
     two.update();
     TWEEN.update();
