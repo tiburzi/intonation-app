@@ -15,6 +15,8 @@ var listening_text;
 var spacebar_keydown_bool = false;
 var inputNote = '';
 var inputOctave = 0;
+var NOTE_NAMES = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
+var noteBtns = [];
 
 // define graphics variables
 const TWO_WIDTH = 1280;
@@ -77,14 +79,14 @@ function initGraphics() {
     listening_text.fill = 'gray';
 
     // make note buttons
-    var _noteNames = ["A", "A#", "B", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#"];
     var angle_offset = SCALE_START_OFFSET_ANGLE;
-    for (let i=0; i<_noteNames.length; i++) {
-    	let angle = TAU * (i/_noteNames.length) + angle_offset;
+    for (let i=0; i<NOTE_NAMES.length; i++) {
+    	let angle = TAU * (i/NOTE_NAMES.length) + angle_offset;
     	let dist = TWO_HEIGHT/2 - 100;
     	let _x = CX + Util.lengthdirX(angle, dist);
     	let _y = CY + Util.lengthdirY(angle, dist);
-    	var btn = makeNoteBtn(_x, _y, _noteNames[i]);
+    	var btn = makeNoteBtn(_x, _y, NOTE_NAMES[i]);
+    	noteBtns.push(btn);
     }
 
     // make note dial
@@ -119,15 +121,28 @@ function makeNoteBtn(x, y, note) {
 	Interactions.add(note_btn);
     Interactions.addHover(note_btn,
     	function() { //on_hover
-    		TweenHelper.tween(note_btn, {scale: 1.2}, 200);
+    		TweenHelper.tween(note_btn, {scale: TweenHelper.TWEEN_SCALE_UP}, 200);
     		TweenHelper.tween(back, {opacity: 1}, 200);
     	},
     	function() { //off_hover
-			TweenHelper.tween(note_btn, {scale: 1}, 200);
+			TweenHelper.tween(note_btn, {scale: TweenHelper.TWEEN_SCALE_NORMAL}, 200);
 			TweenHelper.tween(back, {opacity: 0}, 200);
     	});
 
+    note_btn.onHighlight = function() {
+    	TweenHelper.tween(text, {size: 60}, 200);
+    }
+    note_btn.onUnhighlight = function() {
+    	TweenHelper.tween(text, {size: 30}, 200);
+    }
+
+    note_btn.note = note;
+
     return note_btn;
+}
+
+function getNoteBtn(_note) {
+	return noteBtns.find(elem => elem.note == _note);
 }
 
 function initAudioBuffer() {
@@ -232,8 +247,18 @@ function pitchUpdate(new_pitch) {
 		pitch_display += '<br/>'+off_raw;
 		document.getElementById("test").innerHTML = pitch_display;
 
-		inputNote = getNoteFromToneNote(note);
-		inputOctave = getOctaveFromToneNote(note);
+		let _temp_note = getNoteFromToneNote(note);
+		let _temp_oct = getOctaveFromToneNote(note);
+
+		if (_temp_note != inputNote) {
+			let old_btn = getNoteBtn(inputNote)
+			if (old_btn != undefined) { old_btn.onUnhighlight(); }
+			let new_btn = getNoteBtn(_temp_note)
+			if (new_btn != undefined) { new_btn.onHighlight(); }
+		}
+
+		inputNote = _temp_note;
+		inputOctave = _temp_oct;
 
 		// update visuals
 		/*let scale = -60;
