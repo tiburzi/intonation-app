@@ -106,7 +106,7 @@ function makeNoteBtn(x, y, note) {
 
 	var back = two.makeCircle(0, 0, r).noStroke();
 	back.fill = '#aaaaaa';
-	back.opacity = 1;
+	back.opacity = 0;
 
 	var text = two.makeText(note, 0, 2);
 	text.family = 'Comfortaa';
@@ -114,9 +114,18 @@ function makeNoteBtn(x, y, note) {
 
     var note_btn = two.makeGroup(boundingCircle, back, text);
     note_btn.translation.set(x, y);
+    note_btn.back = back;
 	
 	Interactions.add(note_btn);
-    Interactions.addHoverScale(note_btn);
+    Interactions.addHover(note_btn,
+    	function() { //on_hover
+    		TweenHelper.tween(note_btn, {scale: 1.2}, 200);
+    		TweenHelper.tween(back, {opacity: 1}, 200);
+    	},
+    	function() { //off_hover
+			TweenHelper.tween(note_btn, {scale: 1}, 200);
+			TweenHelper.tween(back, {opacity: 0}, 200);
+    	});
 
     return note_btn;
 }

@@ -153,21 +153,38 @@ Interactions.add = function(shape) {
     });
 }
 
-Interactions.addHoverScale = function(shape) {
+Interactions.addHover = function(shape, on_hover_callback, off_hover_callback) {
     shape.clicked = false;
     shape.hoverOver = false;
-    console.log(1);
 
     shape.onMouseEnter = function(e) {
         if (!shape.hoverOver && !shape.clicked) {
-            TweenHelper.tweenToScale(shape, 1.2, 200);
+            on_hover_callback();
             shape.hoverOver = true;
         }
     }
     shape.onMouseLeave = function(e) {
         if (shape.hoverOver && !shape.clicked) {
-            TweenHelper.tweenToScale(shape, 1, 200);
+            off_hover_callback();
             shape.hoverOver = false;
         }
     }
 }
+
+/*Interactions.addHoverAction = function(shape, hover_state_params, off_state_params) {
+    shape.clicked = false;
+    shape.hoverOver = false;
+
+    shape.onMouseEnter = function(e) {
+        if (!shape.hoverOver && !shape.clicked) {
+            TweenHelper.tween(shape, hover_state_params, 200);
+            shape.hoverOver = true;
+        }
+    }
+    shape.onMouseLeave = function(e) {
+        if (shape.hoverOver && !shape.clicked) {
+            TweenHelper.tween(shape, off_state_params, 200);
+            shape.hoverOver = false;
+        }
+    }
+}*/
