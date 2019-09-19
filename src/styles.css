@@ -18,6 +18,8 @@ body {
     background: lightgray;
 }
 #test {
-	font-size: 40px;
+    position: absolute;
+	font-size: 20px;
     margin: 10px;
+    z-index: 500;
 }
