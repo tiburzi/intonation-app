@@ -4,12 +4,13 @@ const Tone = require("tone");
 // define audio variables
 const detectPitch = Pitchfinder.DynamicWavelet();
 var audioInputBuffer = null;
-var pitchHistory = [];
-const MAX_PITCH_HISTORY = 20;
 const INPUT_LEVEL_THRESHOLD = -45; //dB
 var myChart;
 var pitchRaw;
-var pitchSmoothed;
+var pitchRawHistory = [];
+var pitchSmooth;
+var pitchSmoothHistory = [];
+var sd = 0;
 var motu;
 var meter = new Tone.Meter();
 var listening = false;
@@ -30,6 +31,7 @@ const BLUE_TRANSPARENT = 	'#1481BA50';
 const BACKGROUND_COLOR =	'#f3f3f3ff';
 const GRAY = 				'rgba(190,190,190,1)';
 const LT_GRAY = 			'#f3f3f3';
+const GOLD =				'#EEC72C';
 const TAU = 2*Math.PI;
 const SCALE_START_OFFSET_ANGLE = -0.25*TAU;
 var two;
@@ -177,6 +179,13 @@ function initPitchGraph() {
 				borderColor: GRAY,
 	            fill: false,
 	            data: [],
+	        },
+	        {
+	            label: "standard deviation",
+	            backgroundColor: GOLD,
+				borderColor: GOLD,
+	            fill: false,
+	            data: [],
 	        }],
 	    },
 	    options: {
@@ -222,7 +231,7 @@ function updatePitchGraph() {
     	});
     }
 
-	addData(myChart, pg_count, [pitchSmoothed, pitchRaw]);
+	addData(myChart, pg_count, [pitchSmooth, pitchRaw, pitchSmooth+sd]);
     if (pg_count > pg_maxsize) {removeData(myChart);}
     pg_count ++;
     myChart.update();
@@ -312,51 +321,74 @@ function getNoteFromToneNote(tone_note) {
 	return tone_note.replace(/[0-9]/gi, ''); //remove numbers, leaving the letter
 }
 
-function pitchUpdate(pitch_in) {
-	if (pitch_in != undefined) {
-		pitchRaw = pitch_in;
+function pitchUpdate() {
+	smoothPitch();
 
-		// save the pitch into pitch history
-		pitchHistory.push(pitch_in);
-		if (pitchHistory.length>MAX_PITCH_HISTORY)
-			pitchHistory.shift(); //remove oldest recorded pitch
-		pitchSmoothed = Util.arrayAverage(pitchHistory);
+	// analyze and report the pitch accuracy
+    let off_raw = getPitchNoteOffset(pitchRaw);
+    let off_smoothed = getPitchNoteOffset(pitchSmooth);
+	let note = Tone.Frequency(Tone.Frequency.ftom(pitchRaw), "midi").toNote();
 
-		// analyze and report the pitch accuracy
-	    let off_raw = getPitchNoteOffset(pitch_in);
-	    let off_smoothed = getPitchNoteOffset(pitchSmoothed);
-		let note = Tone.Frequency(Tone.Frequency.ftom(pitch_in), "midi").toNote();
+	debugTextAdd(Math.round(pitchRaw) + ' Hz');
+	debugTextAdd(note);
+	debugTextAdd(off_raw);
 
-		debugTextAdd(Math.round(pitch_in) + ' Hz');
-		debugTextAdd(note);
-		debugTextAdd(off_raw);
+	let _temp_note = getNoteFromToneNote(note);
+	let _temp_oct = getOctaveFromToneNote(note);
 
-		let _temp_note = getNoteFromToneNote(note);
-		let _temp_oct = getOctaveFromToneNote(note);
-
-		if (_temp_note != inputNote) {
-			let old_btn = getNoteBtn(inputNote)
-			if (old_btn != undefined) { old_btn.onUnhighlight(); }
-			let new_btn = getNoteBtn(_temp_note)
-			if (new_btn != undefined) { new_btn.onHighlight(); }
-		}
-
-		inputNote = _temp_note;
-		inputOctave = _temp_oct;
-
-		// update visuals
-		/*let scale = -60;
-	    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
-	    inputbar.translation.y = CY+scale*off_raw;*/
-
-	    let precise_octave = Math.log2(pitchSmoothed/Tone.Frequency.A4) + 1;
-	    noteDial.rotation = precise_octave*TAU + SCALE_START_OFFSET_ANGLE;
-
-	    centsDial.rotation = off_smoothed + SCALE_START_OFFSET_ANGLE;
+	if (_temp_note != inputNote) {
+		let old_btn = getNoteBtn(inputNote)
+		if (old_btn != undefined) { old_btn.onUnhighlight(); }
+		let new_btn = getNoteBtn(_temp_note)
+		if (new_btn != undefined) { new_btn.onHighlight(); }
 	}
+
+	inputNote = _temp_note;
+	inputOctave = _temp_oct;
+
+	// update visuals
+	/*let scale = -60;
+    pitchbar.vertices[0].y = pitchbar.vertices[1].y = scale*off_smoothed;
+    inputbar.translation.y = CY+scale*off_raw;*/
+
+    let precise_octave = Math.log2(pitchSmooth/Tone.Frequency.A4) + 1;
+    noteDial.rotation = precise_octave*TAU + SCALE_START_OFFSET_ANGLE;
+
+    centsDial.rotation = off_smoothed + SCALE_START_OFFSET_ANGLE;
 
 	//pitchbar.fill = (meter.getLevel() < -40) ? BLUE_TRANSPARENT : BLUE;
 	inputmeter.vertices[0].y = inputmeter.vertices[1].y = -Util.lerp(0, TWO_HEIGHT, (100+meter.getLevel())/100);
+}
+
+function smoothPitch() {
+	
+	const MAX_HISTORY = 50;
+	if (!pitchSmooth) {pitchSmooth = pitchRaw;} //initial condition
+
+	// Record raw history
+	Util.finiteArrayPush(pitchRawHistory, pitchRaw, MAX_HISTORY);
+	var raw_average = Util.arrayAverage(pitchRawHistory);
+	
+	// If raw pitch is within a standard deviation, use it. Otherwise, we ignore it.
+	if (Math.abs(pitchRaw-pitchSmooth) < sd || Math.abs(raw_average-pitchSmooth) > sd)
+	{
+		// Exponential Smoothing method
+		const alpha = 0.2; //smoothing amount (low = stronger smoothing but less responsive)
+		pitchSmooth = pitchRaw*alpha + (1-alpha)*pitchSmooth;
+
+		// Record smooth history
+		Util.finiteArrayPush(pitchSmoothHistory, pitchSmooth, MAX_HISTORY);
+
+		// Update standard deviation
+		sd = Util.standardDeviation(pitchSmoothHistory);
+	}
+	
+	
+	// Moving Average method
+	/*pitchRawHistory.push(pitchRaw); //save the pitch into pitch history
+	if (pitchRawHistory.length>MAX_HISTORY)
+		pitchRawHistory.shift(); //remove oldest recorded pitch
+	pitchSmooth = Util.arrayAverage(pitchRawHistory);*/
 }
 
 function setInputListening(active) {
@@ -404,7 +436,8 @@ function update() {
 	debugTextClear();
 	debugUpdate();
 
-	pitchUpdate(getPitchFromAudio());
+	pitchRaw = getPitchFromAudio() || pitchRaw; //don't overwrite if pitch == null
+	pitchUpdate();
 	updatePitchGraph();
 
     two.update();
