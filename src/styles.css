@@ -1,4 +1,4 @@
-/* All the CSS styling for CYNC */
+/* All the CSS styling for the app */
 body {
     margin: 0px;
     background-color: #f3f3f3;
@@ -22,4 +22,10 @@ body {
 	font-size: 20px;
     margin: 10px;
     z-index: 500;
+}
+#pitch-graph {
+    position: absolute;
+}
+section {
+    width: 50%;
 }
